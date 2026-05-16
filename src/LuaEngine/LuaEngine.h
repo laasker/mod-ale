@@ -22,6 +22,7 @@
 #include "ElunaUtility.h"
 #include "HttpManager.h"
 #include "EventEmitter.h"
+#include "LootMgr.h"
 #include "TicketMgr.h"
 #include <mutex>
 #include <memory>
@@ -330,6 +331,7 @@ public:
     void OnLootMoney(Player* pPlayer, uint32 amount);
     void OnFirstLogin(Player* pPlayer);
     void OnEquip(Player* pPlayer, Item* pItem, uint8 bag, uint8 slot);
+    void OnUnEquip(Player* pPlayer, Item* pItem, uint8 slot);
     void OnRepop(Player* pPlayer);
     void OnResurrect(Player* pPlayer);
     void OnQuestAbandon(Player* pPlayer, uint32 questId);

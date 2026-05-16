@@ -649,6 +649,17 @@ namespace LuaPlayer
     }
 
     /**
+     * Returns `true` if the [Player] is currently in a [Arena] queue, `false` otherwise.
+     *
+     * @return bool inArenaQueue
+     */
+    int InArenaQueue(lua_State* L, Player* player)
+    {
+        Eluna::Push(L, player->InArenaQueue());
+        return 1;
+    }
+
+    /**
      * Returns `true` if the [Player] is currently in an arena, `false` otherwise.
      *
      * @return bool inArena
@@ -2138,6 +2149,36 @@ namespace LuaPlayer
         return 0;
     }
 
+
+    // Customs
+    int RemoveGlyphs(lua_State* /*L*/, Player* player)
+    {
+        // remove glyphs and glyphs auras
+        for (uint8 i = 0; i < MAX_GLYPH_SLOT_INDEX; ++i)
+        {
+            if (uint32 glyph = player->GetGlyph(i))
+            {
+                if (GlyphPropertiesEntry const* gp = sGlyphPropertiesStore.LookupEntry(glyph))
+                {
+                    if (GlyphSlotEntry const* gs = sGlyphSlotStore.LookupEntry(player->GetGlyphSlot(i)))
+                    {
+                        player->RemoveAurasDueToSpell(sGlyphPropertiesStore.LookupEntry(glyph)->SpellId);
+                        player->SetGlyph(i, 0, true);       // remove glyphs
+                        player->SendTalentsInfoData(false); // this is somewhat an in-game glyph realtime update (apply/remove)
+                    }
+                }
+            }
+        }
+
+        return 0;
+    }
+    int ReloadActionBar(lua_State* /*L*/, Player* player)
+    {
+        player->ReloadActionBar();
+
+        return 0;
+    }
+
     /**
      * Sends a summon request to the player from the given summoner
      *
@@ -2281,12 +2322,21 @@ namespace LuaPlayer
      * Sends a trainer window to the [Player] from the [Creature] specified
      *
      * @param [Creature] sender
+     * @param uint32 entry : trainer entry
      */
     int SendTrainerList(lua_State* L, Player* player)
     {
-        Creature* obj = Eluna::CHECKOBJ<Creature>(L, 2);
+        uint32 entry = Eluna::CHECKVAL<uint32>(L, 3, 0);
 
-        player->GetSession()->SendTrainerList(obj->GET_GUID());
+        if (!entry) {
+            Creature* obj = Eluna::CHECKOBJ<Creature>(L, 2);
+            player->GetSession()->SendTrainerList(obj->GET_GUID());
+        }
+        else {
+            WorldObject* obj = Eluna::CHECKOBJ<WorldObject>(L, 2);
+            player->GetSession()->SendTrainerList(obj->GET_GUID(), entry);
+        }
+
         return 0;
     }
 
@@ -2547,9 +2597,18 @@ namespace LuaPlayer
     {
         bool no_cost = Eluna::CHECKVAL<bool>(L, 2, true);
 
-        player->resetTalents(no_cost);
-        player->SendTalentsInfoData(false);
-        return 0;
+        if (player->InBattleground() || player->InArena() || player->InBattlegroundQueueForBattlegroundQueueType((BattlegroundQueueTypeId)12) /*solo3v3*/ ||
+            player->InBattlegroundQueueForBattlegroundQueueType((BattlegroundQueueTypeId)11)) // solo1v1
+        {
+            ChatHandler(player->GetSession()).SendNotification("You can't reset your talents while in queue for solo arena.");
+            return false;
+        }
+        else
+        {
+            player->resetTalents(no_cost);
+            player->SendTalentsInfoData(false);
+            return 0;
+        }
     }
 
     /**
@@ -3378,14 +3437,34 @@ namespace LuaPlayer
      */
     int LearnTalent(lua_State* L, Player* player)
     {
-        uint32 id = Eluna::CHECKVAL<uint32>(L, 2);
-        uint32 rank = Eluna::CHECKVAL<uint32>(L, 3);
+        //uint32 id = Eluna::CHECKVAL<uint32>(L, 2);
+        //uint32 rank = Eluna::CHECKVAL<uint32>(L, 3);
 
-        player->LearnTalent(id, rank);
-        player->SendTalentsInfoData(false);
+        //player->LearnTalent(id, rank);
+        //player->SendTalentsInfoData(false);
+
+        //
+        uint32 spellId = Eluna::CHECKVAL<uint32>(L, 2);
+
+        for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
+        {
+            if (TalentEntry const* talent = sTalentStore.LookupEntry(i))
+            {
+                for (uint8 rank = 0; rank < MAX_TALENT_RANK; ++rank)
+                {
+                    if (talent->RankID[rank] == spellId)
+                    {
+                        player->LearnTalent(talent->TalentID, rank);
+                        player->SendTalentsInfoData(false);
+                        return 0;
+                    }
+                }
+            }
+        }
 
         return 0;
     }
+
     /**
     * Run a chat command as if the player typed it into the chat
     *
@@ -3406,6 +3485,41 @@ namespace LuaPlayer
         return 0;
     }
 
+
+    int ClearActionButtons(lua_State* L, Player* player)
+    {
+        for (uint8 button = 0; button < MAX_ACTION_BUTTONS; ++button)
+        {
+            if (ActionButton* ab = const_cast<ActionButton*>(player->GetActionButton(button)))
+            {
+                ab->uState = ACTIONBUTTON_DELETED;
+            }
+            //if (const ActionButton* cab = player->GetActionButton(button))
+            //{
+            //    // cast away const to modify uState
+            //    ActionButton* ab = const_cast<ActionButton*>(cab);
+            //    ab->uState = ACTIONBUTTON_DELETED;
+            //}
+        }
+
+        return 0;
+    }
+
+    int ApplyActionButton(lua_State* L, Player* player)
+    {
+        uint8 button = Eluna::CHECKVAL<uint8>(L, 2);
+        uint32 action = Eluna::CHECKVAL<uint32>(L, 3);
+        uint8 type = Eluna::CHECKVAL<uint8>(L, 4);
+
+        //player->addActionButton(button, action, type);
+        if (ActionButton* actionbutton = player->addActionButton(button, action, type))
+        {
+            actionbutton->uState = ACTIONBUTTON_NEW;
+        }
+
+        return 0;
+    }
+
     /**
     * Adds a glyph specified by `glyphId` to the [Player]'s current talent specialization into the slot with the index `slotIndex`
     *
@@ -3417,7 +3531,11 @@ namespace LuaPlayer
         uint32 glyphId = Eluna::CHECKVAL<uint32>(L, 2);
         uint32 slotIndex = Eluna::CHECKVAL<uint32>(L, 3);
 
-        player->SetGlyph(slotIndex, glyphId, true);
+        if (GlyphPropertiesEntry const* gp = sGlyphPropertiesStore.LookupEntry(glyphId))
+        {
+            player->CastSpell(player, gp->SpellId, true);
+            player->SetGlyph(slotIndex, glyphId, true);
+        }
         player->SendTalentsInfoData(false); // Also handles GlyphData
 
         return 0;
