@@ -225,6 +225,29 @@ namespace LuaItem
     }*/
 
     /**
+    * Returns 'true' if the [Item] is refundable, 'false' otherwise
+    *
+    * @return bool isRefundable
+    */
+    int IsRefundable(lua_State* L, Item* item)
+    {
+        ALE::Push(L, item->IsRefundable());
+        return 1;
+    }
+
+    /**
+    * Sets the [Item] as not refundable.
+    *
+    * @param [Player] owner : The player who owns the item.
+    */
+    int SetNotRefundable(lua_State* L, Item* item)
+    {
+        Player* owner = ALE::CHECKOBJ<Player>(L, 2);
+        item->SetNotRefundable(owner);
+        return 0;
+    }
+
+    /**
      * Returns the chat link of the [Item]
      *
      * <pre>
