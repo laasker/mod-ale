@@ -1047,9 +1047,7 @@ ALERegister<Item> ItemMethods[] =
     { "IsArmorVellum", &LuaItem::IsArmorVellum },
     { "IsConjuredConsumable", &LuaItem::IsConjuredConsumable },
     //{"IsRefundExpired", &LuaItem::IsRefundExpired},               // :IsRefundExpired() - UNDOCUMENTED - Returns true if the item's refund time has expired
-    { "IsRefundable", &LuaItem::IsRefundable },
     { "SetEnchantment", &LuaItem::SetEnchantment },
-    { "SetNotRefundable", &LuaItem::SetNotRefundable },
     { "ClearEnchantment", &LuaItem::ClearEnchantment },
 
     // Other
