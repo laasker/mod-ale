@@ -3561,6 +3561,39 @@ namespace LuaPlayer
         return 0;
     }
 
+    int ClearActionButtons(lua_State* L, Player* player)
+    {
+        for (uint8 button = 0; button < MAX_ACTION_BUTTONS; ++button)
+        {
+            if (ActionButton* ab = const_cast<ActionButton*>(player->GetActionButton(button)))
+            {
+                ab->uState = ACTIONBUTTON_DELETED;
+            }
+            //if (const ActionButton* cab = player->GetActionButton(button))
+            //{
+            //    // cast away const to modify uState
+            //    ActionButton* ab = const_cast<ActionButton*>(cab);
+            //    ab->uState = ACTIONBUTTON_DELETED;
+            //}
+        }
+
+        return 0;
+    }
+
+    int ApplyActionButton(lua_State* L, Player* player)
+    {
+        uint8 button = ALE::CHECKVAL<uint8>(L, 2);
+        uint32 action = ALE::CHECKVAL<uint32>(L, 3);
+        uint8 type = ALE::CHECKVAL<uint8>(L, 4);
+
+        //player->addActionButton(button, action, type);
+        if (ActionButton* actionbutton = player->addActionButton(button, action, type))
+        {
+            actionbutton->uState = ACTIONBUTTON_NEW;
+        }
+
+        return 0;
+    }
     /**
     * Adds a glyph specified by `glyphId` to the [Player]'s current talent specialization into the slot with the index `slotIndex`
     *

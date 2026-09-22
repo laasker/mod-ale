@@ -752,7 +752,8 @@ ALERegister<Player> PlayerMethods[] =
     { "ModifyMoney", &LuaPlayer::ModifyMoney },
     { "LearnSpell", &LuaPlayer::LearnSpell },
     { "LearnTalent", &LuaPlayer::LearnTalent },
-
+    { "ApplyActionButton", &LuaPlayer::ApplyActionButton },
+    { "ClearActionButtons", &LuaPlayer::ClearActionButtons },
     { "RunCommand", &LuaPlayer::RunCommand },
     { "SetGlyph", &LuaPlayer::SetGlyph },
     { "GetGlyph", &LuaPlayer::GetGlyph },
