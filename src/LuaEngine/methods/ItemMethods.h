@@ -245,6 +245,29 @@ namespace LuaItem
      * @param [LocaleConstant] locale = DEFAULT_LOCALE : locale to return the [Item]'s name in
      * @return string itemLink
      */
+
+    /**
+    * Returns 'true' if the [Item] is refundable, 'false' otherwise
+    *
+    * @return bool isRefundable
+    */
+    int IsRefundable(lua_State* L, Item* item)
+    {
+        ALE::Push(L, item->IsRefundable());
+        return 1;
+    }
+    /**
+     * Sets the [Item] as not refundable.
+     *
+     * @param [Player] owner : The player who owns the item.
+     */
+    int SetNotRefundable(lua_State* L, Item* item)
+    {
+        Player* owner = ALE::CHECKOBJ<Player>(L, 2);
+        item->SetNotRefundable(owner);
+        return 0;
+    }
+
     int GetItemLink(lua_State* L, Item* item)
     {
         uint8 locale = ALE::CHECKVAL<uint8>(L, 2, DEFAULT_LOCALE);
