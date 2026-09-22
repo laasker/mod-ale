@@ -672,6 +672,7 @@ ALERegister<Player> PlayerMethods[] =
     { "IsGMVisible", &LuaPlayer::IsGMVisible },
     { "HasQuest", &LuaPlayer::HasQuest },
     { "InBattlegroundQueue", &LuaPlayer::InBattlegroundQueue },
+    { "InArenaQueue", &LuaPlayer::InArenaQueue },
     // {"IsImmuneToEnvironmentalDamage", &LuaPlayer::IsImmuneToEnvironmentalDamage},        // :IsImmuneToEnvironmentalDamage() - UNDOCUMENTED - Returns true if the player is immune to environmental damage
     { "CanSpeak", &LuaPlayer::CanSpeak },
     { "HasAtLoginFlag", &LuaPlayer::HasAtLoginFlag },

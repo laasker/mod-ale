@@ -735,6 +735,17 @@ namespace LuaPlayer
     }
 
     /**
+     * Returns `true` if the [Player] is currently in a [Arena] queue, `false` otherwise.
+     *
+     * @return bool inArenaQueue
+     */
+    int InArenaQueue(lua_State* L, Player* player)
+    {
+        ALE::Push(L, player->InArenaQueue());
+        return 1;
+    }
+
+    /**
      * Returns `true` if the [Player] is currently in an arena, `false` otherwise.
      *
      * @return bool inArena
