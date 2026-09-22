@@ -2448,7 +2448,6 @@ namespace LuaPlayer
 
         player->GetSession()->SendTrainerList(obj, entry);
 
-        player->GetSession()->SendTrainerList(obj);
         return 0;
     }
 
