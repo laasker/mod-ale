@@ -3555,6 +3555,10 @@ namespace LuaPlayer
 
         return 0;
     }
+
+    //
+    //
+
     /**
     * Run a chat command as if the player typed it into the chat
     *
@@ -3659,6 +3663,22 @@ namespace LuaPlayer
 
         return 0;
     }
+
+    // Meu SetGlyph antigo
+    //int SetGlyph(lua_State* L, Player* player)
+    //{
+    //    uint32 glyphId = ALE::CHECKVAL<uint32>(L, 2);
+    //    uint32 slotIndex = ALE::CHECKVAL<uint32>(L, 3);
+
+    //    if (GlyphPropertiesEntry const* glyphEntry = sGlyphPropertiesStore.LookupEntry(glyphId))
+    //    {
+    //        player->CastSpell(player, glyphEntry->SpellId, true);
+    //        player->SetGlyph(slotIndex, glyphId, true);
+    //    }
+    //    player->SendTalentsInfoData(false); // Also handles GlyphData
+
+    //    return 0;
+    //}
 
     /**
     * Returns the glyph ID in the specified glyph slot of the [Player]'s current talent specialization.
