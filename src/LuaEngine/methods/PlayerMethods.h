@@ -2439,7 +2439,14 @@ namespace LuaPlayer
      */
     int SendTrainerList(lua_State* L, Player* player)
     {
+        //Creature* obj = ALE::CHECKOBJ<Creature>(L, 2);
+
+        //player->GetSession()->SendTrainerList(obj);
+
         Creature* obj = ALE::CHECKOBJ<Creature>(L, 2);
+        uint32 entry = ALE::CHECKVAL<uint32>(L, 3, 0);
+
+        player->GetSession()->SendTrainerList(obj, entry);
 
         player->GetSession()->SendTrainerList(obj);
         return 0;
