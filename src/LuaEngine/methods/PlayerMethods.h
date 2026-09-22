@@ -3545,15 +3545,199 @@ namespace LuaPlayer
      * @param uint32 talent_id
      * @param uint32 talentRank
      */
+    //int LearnTalent(lua_State* L, Player* player)
+    //{
+    //    //uint32 id = ALE::CHECKVAL<uint32>(L, 2);
+    //    //uint32 rank = ALE::CHECKVAL<uint32>(L, 3);
+
+    //    //player->LearnTalent(id, rank);
+    //    //player->SendTalentsInfoData(false);
+
+    //    uint32 spellId = ALE::CHECKVAL<uint32>(L, 2);
+
+    //    for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
+    //    {
+    //        if (TalentEntry const* talent = sTalentStore.LookupEntry(i))
+    //        {
+    //            for (uint8 rank = 0; rank < MAX_TALENT_RANK; ++rank)
+    //            {
+    //                if (talent->RankID[rank] == spellId)
+    //                {
+    //                    player->LearnTalent(talent->TalentID, rank);
+    //                    player->SendTalentsInfoData(false);
+    //                    return 0;
+    //                }
+    //            }
+    //        }
+    //    }
+
+    //    return 0;
+    //}
+
+    // 
+    //int LearnTalent(lua_State* L, Player* player)
+    //{
+    //    // Espera uma tabela Lua: { spellId1, spellId2, spellId3, ... }
+    //    luaL_checktype(L, 2, LUA_TTABLE);
+
+    //    struct PendingTalent
+    //    {
+    //        uint32 talentID;
+    //        uint8  rank;
+    //        uint32 row;
+    //    };
+
+    //    std::vector<PendingTalent> pending;
+
+    //    // Monta a lista resolvendo spellId -> TalentEntry
+    //    lua_pushnil(L);
+    //    while (lua_next(L, 2) != 0)
+    //    {
+    //        uint32 spellId = static_cast<uint32>(lua_tointeger(L, -1));
+
+    //        for (uint32 i = 0; i < sTalentStore.GetNumRows(); ++i)
+    //        {
+    //            if (TalentEntry const* talent = sTalentStore.LookupEntry(i))
+    //            {
+    //                bool found = false;
+    //                for (uint8 rank = 0; rank < MAX_TALENT_RANK; ++rank)
+    //                {
+    //                    if (talent->RankID[rank] == spellId)
+    //                    {
+    //                        pending.push_back({ talent->TalentID, rank, talent->Row });
+    //                        found = true;
+    //                        break;
+    //                    }
+    //                }
+    //                if (found)
+    //                    break;
+    //            }
+    //        }
+
+    //        lua_pop(L, 1);
+    //    }
+
+    //    // Ordena por tier (Row) ascendente - resolve pre-requisito de pontos-por-tier
+    //    std::sort(pending.begin(), pending.end(),
+    //        [](PendingTalent const& a, PendingTalent const& b) { return a.row < b.row; });
+
+    //    // Aplica; até 3 passadas extras só pra pegar casos raros de DependsOn cruzado
+    //    for (uint8 pass = 0; pass < 4 && !pending.empty(); ++pass)
+    //    {
+    //        std::vector<PendingTalent> stillPending;
+
+    //        for (auto const& t : pending)
+    //        {
+    //            bool hadBefore = player->HasTalent(t.talentID, player->GetActiveSpec());
+    //            player->LearnTalent(t.talentID, t.rank);
+    //            bool hasNow = player->HasTalent(t.talentID, player->GetActiveSpec());
+
+    //            if (!hasNow && !hadBefore)
+    //                stillPending.push_back(t); // ainda não conseguiu, tenta na proxima passada
+    //        }
+
+    //        pending = std::move(stillPending);
+    //    }
+
+    //    player->SendTalentsInfoData(false);
+
+    //    ALE::Push(L, pending.empty()); // opcional: retorna se sobrou algo sem aplicar
+    //    return 1;
+    //}
+
     int LearnTalent(lua_State* L, Player* player)
     {
-        uint32 id = ALE::CHECKVAL<uint32>(L, 2);
-        uint32 rank = ALE::CHECKVAL<uint32>(L, 3);
+        luaL_checktype(L, 2, LUA_TTABLE);
 
-        player->LearnTalent(id, rank);
-        player->SendTalentsInfoData(false);
+        struct PendingTalent
+        {
+            uint32 SpellId;
+            uint32 TalentId;
+            uint8 Rank;
+            uint32 Row;
+        };
 
-        return 0;
+        std::vector<PendingTalent> pending;
+        uint32 unresolvedCount = 0;
+
+        std::size_t talentCount = lua_rawlen(L, 2);
+        pending.reserve(talentCount);
+
+        for (std::size_t index = 1; index <= talentCount; ++index)
+        {
+            lua_rawgeti(L, 2, static_cast<lua_Integer>(index));
+            uint32 spellId = static_cast<uint32>(luaL_checkinteger(L, -1));
+            lua_pop(L, 1);
+
+            bool found = false;
+            for (uint32 talentIndex = 0; talentIndex < sTalentStore.GetNumRows() && !found; ++talentIndex)
+            {
+                TalentEntry const* talent = sTalentStore.LookupEntry(talentIndex);
+                if (!talent)
+                    continue;
+
+                for (uint8 rank = 0; rank < MAX_TALENT_RANK; ++rank)
+                {
+                    if (talent->RankID[rank] != spellId)
+                        continue;
+
+                    pending.push_back({ spellId, talent->TalentID, rank, talent->Row });
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+                ++unresolvedCount;
+        }
+
+        std::sort(pending.begin(), pending.end(), [](PendingTalent const& left, PendingTalent const& right)
+            {
+                if (left.Row != right.Row)
+                    return left.Row < right.Row;
+
+                if (left.TalentId != right.TalentId)
+                    return left.TalentId < right.TalentId;
+
+                return left.Rank < right.Rank;
+            });
+
+        bool learnedAnyTalent = false;
+        bool madeProgress = true;
+
+        while (!pending.empty() && madeProgress)
+        {
+            madeProgress = false;
+            std::vector<PendingTalent> stillPending;
+            stillPending.reserve(pending.size());
+
+            for (PendingTalent const& talent : pending)
+            {
+                if (player->HasTalent(talent.SpellId, player->GetActiveSpec()))
+                    continue;
+
+                player->LearnTalent(talent.TalentId, talent.Rank);
+
+                if (player->HasTalent(talent.SpellId, player->GetActiveSpec()))
+                {
+                    learnedAnyTalent = true;
+                    madeProgress = true;
+                }
+                else
+                {
+                    stillPending.push_back(talent);
+                }
+            }
+
+            pending.swap(stillPending);
+        }
+
+        if (learnedAnyTalent)
+            player->SendTalentsInfoData(false);
+
+        unresolvedCount += pending.size();
+        ALE::Push(L, unresolvedCount == 0);
+        return 1;
     }
 
     //
