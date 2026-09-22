@@ -832,6 +832,8 @@ ALERegister<Player> PlayerMethods[] =
     { "SendGuildInvite", &LuaPlayer::SendGuildInvite },
     { "Mute", &LuaPlayer::Mute },
     { "SummonPlayer", &LuaPlayer::SummonPlayer },
+    { "RemoveGlyphs", &LuaPlayer::RemoveGlyphs },
+    { "ReloadActionBar", &LuaPlayer::ReloadActionBar },
     { "SaveToDB", &LuaPlayer::SaveToDB },
     { "GroupInvite", &LuaPlayer::GroupInvite },
     { "GroupCreate", &LuaPlayer::GroupCreate },
